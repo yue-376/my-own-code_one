@@ -17,7 +17,7 @@ int main(void) {
     }
 
     buildCourseDataset(his);
-    printf("系统已初始化：当前已生成 5 个科室、20 名医生、120 名患者、35 名住院患者、30 种药品。\n");
+    printf("系统已初始化：当前已生成 5 个科室、20 名医生、135 名患者、35 名住院患者、30 种药品。\n");
 
     while (1) {
         showMainMenu();

@@ -1275,11 +1275,15 @@ void seedBaseDepartmentsAndWards(HIS *his, int *departmentIds, int *wardIds) {
 
 void seedDoctors(HIS *his, const int *departmentIds) {
     const char *titles[] = {"住院医师", "主治医师", "副主任医师", "主任医师"};
+    const char *doctorNames[] = {
+        "张建国", "刘志强", "陈晓峰", "黄文杰", "周明远",
+        "吴海涛", "徐振宇", "孙德峰", "马俊涛", "朱宏伟",
+        "林嘉豪", "何立新", "高云飞", "郭志鹏", "罗文斌",
+        "梁博文", "宋嘉诚", "谢安邦", "唐逸凡", "邓浩然"
+    };
     int i;
     for (i = 0; i < 20; i++) {
-        char name[NAME_LEN];
-        snprintf(name, sizeof(name), "医生%02d", i + 1);
-        appendDoctor(his, name, departmentIds[i % 5], titles[i % 4]);
+        appendDoctor(his, doctorNames[i], departmentIds[i % 5], titles[i % 4]);
     }
 }
 
@@ -1341,7 +1345,7 @@ void buildCourseDataset(HIS *his) {
     seedDoctors(his, departmentIds);
     seedMedicines(his);
 
-    for (i = 0; i < 120; i++) {
+    for (i = 0; i < 135; i++) {
         char patientName[NAME_LEN];
         char phone[ID_LEN];
         char note[NOTE_LEN];

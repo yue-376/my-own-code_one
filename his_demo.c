@@ -185,6 +185,139 @@ void initHIS(HIS *his) {
     his->nextPrescriptionId = 1;
 }
 
+int nextAvailableDepartmentId(HIS *his) {
+    int candidate = 1;
+    while (1) {
+        Department *current = his->departments;
+        int used = 0;
+        while (current != NULL) {
+            if (current->id == candidate) {
+                used = 1;
+                break;
+            }
+            current = current->next;
+        }
+        if (!used) {
+            return candidate;
+        }
+        candidate++;
+    }
+}
+
+int nextAvailableDoctorId(HIS *his) {
+    int candidate = 1;
+    while (1) {
+        Doctor *current = his->doctors;
+        int used = 0;
+        while (current != NULL) {
+            if (current->id == candidate) {
+                used = 1;
+                break;
+            }
+            current = current->next;
+        }
+        if (!used) {
+            return candidate;
+        }
+        candidate++;
+    }
+}
+
+int nextAvailablePatientId(HIS *his) {
+    int candidate = 1;
+    while (1) {
+        Patient *current = his->patients;
+        int used = 0;
+        while (current != NULL) {
+            if (current->id == candidate) {
+                used = 1;
+                break;
+            }
+            current = current->next;
+        }
+        if (!used) {
+            return candidate;
+        }
+        candidate++;
+    }
+}
+
+int nextAvailableWardId(HIS *his) {
+    int candidate = 1;
+    while (1) {
+        Ward *current = his->wards;
+        int used = 0;
+        while (current != NULL) {
+            if (current->id == candidate) {
+                used = 1;
+                break;
+            }
+            current = current->next;
+        }
+        if (!used) {
+            return candidate;
+        }
+        candidate++;
+    }
+}
+
+int nextAvailableMedicineId(HIS *his) {
+    int candidate = 1;
+    while (1) {
+        Medicine *current = his->medicines;
+        int used = 0;
+        while (current != NULL) {
+            if (current->id == candidate) {
+                used = 1;
+                break;
+            }
+            current = current->next;
+        }
+        if (!used) {
+            return candidate;
+        }
+        candidate++;
+    }
+}
+
+int nextAvailableRecordId(HIS *his) {
+    int candidate = 1;
+    while (1) {
+        Record *current = his->records;
+        int used = 0;
+        while (current != NULL) {
+            if (current->id == candidate) {
+                used = 1;
+                break;
+            }
+            current = current->next;
+        }
+        if (!used) {
+            return candidate;
+        }
+        candidate++;
+    }
+}
+
+int nextAvailablePrescriptionId(HIS *his) {
+    int candidate = 1;
+    while (1) {
+        Prescription *current = his->prescriptions;
+        int used = 0;
+        while (current != NULL) {
+            if (current->id == candidate) {
+                used = 1;
+                break;
+            }
+            current = current->next;
+        }
+        if (!used) {
+            return candidate;
+        }
+        candidate++;
+    }
+}
+
 Department *appendDepartment(HIS *his, const char *name) {
     Department *node = (Department *)malloc(sizeof(Department));
     Department *tail;
@@ -192,7 +325,7 @@ Department *appendDepartment(HIS *his, const char *name) {
         return NULL;
     }
 
-    node->id = his->nextDepartmentId++;
+    node->id = nextAvailableDepartmentId(his);
     strncpy(node->name, name, NAME_LEN - 1);
     node->name[NAME_LEN - 1] = '\0';
     node->next = NULL;
@@ -216,7 +349,7 @@ Doctor *appendDoctor(HIS *his, const char *name, int departmentId, const char *t
         return NULL;
     }
 
-    node->id = his->nextDoctorId++;
+    node->id = nextAvailableDoctorId(his);
     node->departmentId = departmentId;
     strncpy(node->name, name, NAME_LEN - 1);
     node->name[NAME_LEN - 1] = '\0';
@@ -243,7 +376,7 @@ Ward *appendWard(HIS *his, const char *name, int departmentId, int totalBeds) {
         return NULL;
     }
 
-    node->id = his->nextWardId++;
+    node->id = nextAvailableWardId(his);
     node->departmentId = departmentId;
     node->totalBeds = totalBeds;
     node->usedBeds = 0;
@@ -270,7 +403,7 @@ Medicine *appendMedicine(HIS *his, const char *genericName, const char *brandNam
         return NULL;
     }
 
-    node->id = his->nextMedicineId++;
+    node->id = nextAvailableMedicineId(his);
     node->stock = stock;
     node->unitPrice = unitPrice;
     strncpy(node->genericName, genericName, NAME_LEN - 1);
@@ -301,7 +434,7 @@ Patient *appendPatient(HIS *his, const char *name, int age, const char *gender, 
         return NULL;
     }
 
-    node->id = his->nextPatientId++;
+    node->id = nextAvailablePatientId(his);
     node->age = age;
     node->registeredDoctorId = 0;
     node->admittedWardId = 0;
@@ -333,7 +466,7 @@ Record *appendRecord(HIS *his, int patientId, int doctorId, const char *type, co
         return NULL;
     }
 
-    node->id = his->nextRecordId++;
+    node->id = nextAvailableRecordId(his);
     node->patientId = patientId;
     node->doctorId = doctorId;
     strncpy(node->type, type, TYPE_LEN - 1);
@@ -361,7 +494,7 @@ Prescription *appendPrescription(HIS *his, int patientId, int doctorId, int medi
         return NULL;
     }
 
-    node->id = his->nextPrescriptionId++;
+    node->id = nextAvailablePrescriptionId(his);
     node->patientId = patientId;
     node->doctorId = doctorId;
     node->medicineId = medicineId;

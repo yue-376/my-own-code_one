@@ -81,6 +81,7 @@ typedef struct Record {
 
 typedef struct Prescription {
     int id;
+    int recordId;
     int patientId;
     int doctorId;
     int medicineId;
@@ -505,7 +506,7 @@ Record *appendRecord(HIS *his, int patientId, int doctorId, const char *type, co
     return node;
 }
 
-Prescription *appendPrescription(HIS *his, int patientId, int doctorId, int medicineId, int quantity) {
+Prescription *appendPrescription(HIS *his, int recordId, int patientId, int doctorId, int medicineId, int quantity) {
     Prescription *node = (Prescription *)malloc(sizeof(Prescription));
     Prescription *tail;
     if (node == NULL) {
@@ -513,6 +514,7 @@ Prescription *appendPrescription(HIS *his, int patientId, int doctorId, int medi
     }
 
     node->id = nextAvailablePrescriptionId(his);
+    node->recordId = recordId;
     node->patientId = patientId;
     node->doctorId = doctorId;
     node->medicineId = medicineId;
@@ -551,6 +553,26 @@ void removeRecordsByPatientId(HIS *his, int patientId) {
             current = current->next;
         }
     }
+}
+
+int deleteRecordById(HIS *his, int recordId) {
+    Record *current = his->records;
+    Record *previous = NULL;
+
+    while (current != NULL) {
+        if (current->id == recordId) {
+            if (previous == NULL) {
+                his->records = current->next;
+            } else {
+                previous->next = current->next;
+            }
+            free(current);
+            return 1;
+        }
+        previous = current;
+        current = current->next;
+    }
+    return 0;
 }
 
 void removePrescriptionsByPatientId(HIS *his, int patientId) {
@@ -813,6 +835,7 @@ int admitPatient(HIS *his, int patientId, int wardId, const char *diagnosis) {
 
 int prescribeMedicine(HIS *his, int patientId, int doctorId, int medicineId, int quantity) {
     Medicine *medicine = findMedicineById(his, medicineId);
+    Record *record;
     if (findPatientById(his, patientId) == NULL || findDoctorById(his, doctorId) == NULL || medicine == NULL) {
         return 0;
     }
@@ -821,8 +844,16 @@ int prescribeMedicine(HIS *his, int patientId, int doctorId, int medicineId, int
     }
 
     medicine->stock -= quantity;
-    appendPrescription(his, patientId, doctorId, medicineId, quantity);
-    appendRecord(his, patientId, doctorId, "处方", medicine->genericName);
+    record = appendRecord(his, patientId, doctorId, "处方", medicine->genericName);
+    if (record == NULL) {
+        medicine->stock += quantity;
+        return 0;
+    }
+    if (appendPrescription(his, record->id, patientId, doctorId, medicineId, quantity) == NULL) {
+        deleteRecordById(his, record->id);
+        medicine->stock += quantity;
+        return 0;
+    }
     return 1;
 }
 
@@ -922,8 +953,9 @@ void printPrescriptions(HIS *his) {
         Patient *patient = findPatientById(his, cur->patientId);
         Doctor *doctor = findDoctorById(his, cur->doctorId);
         Medicine *medicine = findMedicineById(his, cur->medicineId);
-        printf("处方ID:%d 患者:%s 医生:%s 药品:%s 数量:%d\n",
+        printf("处方ID:%d 关联记录ID:%d 患者:%s 医生:%s 药品:%s 数量:%d\n",
                cur->id,
+               cur->recordId,
                patient != NULL ? patient->name : "未知患者",
                doctor != NULL ? doctor->name : "未知医生",
                medicine != NULL ? medicine->genericName : "未知药品",
@@ -1096,9 +1128,16 @@ int exportPrescriptions(HIS *his, const char *filename) {
     if (fp == NULL) {
         return 0;
     }
-    fprintf(fp, "id,patientId,doctorId,medicineId,quantity\n");
+    fprintf(fp, "id,recordId,patientId,doctorId,medicineId,quantity\n");
     while (cur != NULL) {
-        fprintf(fp, "%d,%d,%d,%d,%d\n", cur->id, cur->patientId, cur->doctorId, cur->medicineId, cur->quantity);
+        fprintf(fp,
+                "%d,%d,%d,%d,%d,%d\n",
+                cur->id,
+                cur->recordId,
+                cur->patientId,
+                cur->doctorId,
+                cur->medicineId,
+                cur->quantity);
         cur = cur->next;
     }
     fclose(fp);

@@ -12,7 +12,7 @@ run: $(TARGET)
 	./$(TARGET)
 
 export: $(TARGET)
-	printf '15\n0\n' | ./$(TARGET)
+	printf '16\n0\n' | ./$(TARGET)
 
 clean:
 	rm -f $(TARGET) *.o

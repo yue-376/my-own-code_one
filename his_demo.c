@@ -98,6 +98,8 @@ typedef struct HIS {
     int nextPrescriptionId;
 } HIS;
 
+Ward *findWardById(HIS *his, int id);
+
 void trimNewline(char *text) {
     size_t len = strlen(text);
     if (len > 0 && text[len - 1] == '\n') {
@@ -375,6 +377,80 @@ Prescription *appendPrescription(HIS *his, int patientId, int doctorId, int medi
         tail->next = node;
     }
     return node;
+}
+
+void removeRecordsByPatientId(HIS *his, int patientId) {
+    Record *current = his->records;
+    Record *previous = NULL;
+
+    while (current != NULL) {
+        if (current->patientId == patientId) {
+            Record *toDelete = current;
+            if (previous == NULL) {
+                his->records = current->next;
+                current = his->records;
+            } else {
+                previous->next = current->next;
+                current = previous->next;
+            }
+            free(toDelete);
+        } else {
+            previous = current;
+            current = current->next;
+        }
+    }
+}
+
+void removePrescriptionsByPatientId(HIS *his, int patientId) {
+    Prescription *current = his->prescriptions;
+    Prescription *previous = NULL;
+
+    while (current != NULL) {
+        if (current->patientId == patientId) {
+            Prescription *toDelete = current;
+            if (previous == NULL) {
+                his->prescriptions = current->next;
+                current = his->prescriptions;
+            } else {
+                previous->next = current->next;
+                current = previous->next;
+            }
+            free(toDelete);
+        } else {
+            previous = current;
+            current = current->next;
+        }
+    }
+}
+
+int deletePatientById(HIS *his, int patientId) {
+    Patient *current = his->patients;
+    Patient *previous = NULL;
+
+    while (current != NULL) {
+        if (current->id == patientId) {
+            if (current->admittedWardId != 0) {
+                Ward *ward = findWardById(his, current->admittedWardId);
+                if (ward != NULL && ward->usedBeds > 0) {
+                    ward->usedBeds -= 1;
+                }
+            }
+
+            removeRecordsByPatientId(his, patientId);
+            removePrescriptionsByPatientId(his, patientId);
+
+            if (previous == NULL) {
+                his->patients = current->next;
+            } else {
+                previous->next = current->next;
+            }
+            free(current);
+            return 1;
+        }
+        previous = current;
+        current = current->next;
+    }
+    return 0;
 }
 
 Department *findDepartmentById(HIS *his, int id) {
@@ -989,6 +1065,20 @@ void addPatientInteractive(HIS *his) {
     }
 }
 
+void deletePatientInteractive(HIS *his) {
+    int patientId = readInt("请输入要删除的患者ID: ");
+    if (findPatientById(his, patientId) == NULL) {
+        printf("删除失败：患者ID不存在。\n");
+        return;
+    }
+
+    if (deletePatientById(his, patientId)) {
+        printf("删除患者成功，关联医疗记录和处方已一并清理。\n");
+    } else {
+        printf("删除失败：系统未能完成删除操作。\n");
+    }
+}
+
 void registerPatientInteractive(HIS *his) {
     int patientId = readInt("请输入患者ID: ");
     int doctorId = readInt("请输入医生ID: ");
@@ -1098,17 +1188,18 @@ void showMenu(void) {
     printf("3. 查看病房列表\n");
     printf("4. 查看患者列表\n");
     printf("5. 新增患者\n");
-    printf("6. 办理挂号\n");
-    printf("7. 办理住院\n");
-    printf("8. 开具处方\n");
-    printf("9. 查看药品库存\n");
-    printf("10. 查看医疗记录\n");
-    printf("11. 查看处方记录\n");
-    printf("12. 患者姓名查询\n");
-    printf("13. 查看综合统计\n");
-    printf("14. 查看科室工作量统计\n");
-    printf("15. 导出 txt 数据文件\n");
-    printf("16. 重新生成课程设计样例数据\n");
+    printf("6. 删除患者\n");
+    printf("7. 办理挂号\n");
+    printf("8. 办理住院\n");
+    printf("9. 开具处方\n");
+    printf("10. 查看药品库存\n");
+    printf("11. 查看医疗记录\n");
+    printf("12. 查看处方记录\n");
+    printf("13. 患者姓名查询\n");
+    printf("14. 查看综合统计\n");
+    printf("15. 查看科室工作量统计\n");
+    printf("16. 导出 txt 数据文件\n");
+    printf("17. 重新生成课程设计样例数据\n");
     printf("0. 退出系统\n");
 }
 
@@ -1141,36 +1232,39 @@ int main(void) {
                 addPatientInteractive(&his);
                 break;
             case 6:
-                registerPatientInteractive(&his);
+                deletePatientInteractive(&his);
                 break;
             case 7:
-                admitPatientInteractive(&his);
+                registerPatientInteractive(&his);
                 break;
             case 8:
-                prescribeMedicineInteractive(&his);
+                admitPatientInteractive(&his);
                 break;
             case 9:
-                printMedicines(&his);
+                prescribeMedicineInteractive(&his);
                 break;
             case 10:
-                printRecords(&his);
+                printMedicines(&his);
                 break;
             case 11:
-                printPrescriptions(&his);
+                printRecords(&his);
                 break;
             case 12:
-                searchPatientInteractive(&his);
+                printPrescriptions(&his);
                 break;
             case 13:
-                printStatistics(&his);
+                searchPatientInteractive(&his);
                 break;
             case 14:
-                printDepartmentWorkload(&his);
+                printStatistics(&his);
                 break;
             case 15:
-                exportAllData(&his);
+                printDepartmentWorkload(&his);
                 break;
             case 16:
+                exportAllData(&his);
+                break;
+            case 17:
                 buildCourseDataset(&his);
                 printf("已重新生成课程设计样例数据。\n");
                 break;

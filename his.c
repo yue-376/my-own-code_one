@@ -777,6 +777,28 @@ Patient *findPatientById(HIS *his, int id) {
     return NULL;
 }
 
+Record *findRecordById(HIS *his, int id) {
+    Record *cur = his->records;
+    while (cur != NULL) {
+        if (cur->id == id) {
+            return cur;
+        }
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+Prescription *findPrescriptionById(HIS *his, int id) {
+    Prescription *cur = his->prescriptions;
+    while (cur != NULL) {
+        if (cur->id == id) {
+            return cur;
+        }
+        cur = cur->next;
+    }
+    return NULL;
+}
+
 Ward *findWardById(HIS *his, int id) {
     Ward *cur = his->wards;
     while (cur != NULL) {
@@ -961,6 +983,45 @@ void printPrescriptions(HIS *his) {
                medicine != NULL ? medicine->genericName : "未知药品",
                cur->quantity);
         cur = cur->next;
+    }
+}
+
+void searchPrescriptionById(HIS *his, int prescriptionId) {
+    Prescription *prescription = findPrescriptionById(his, prescriptionId);
+    Patient *patient;
+    Doctor *doctor;
+    Medicine *medicine;
+    Record *record;
+    if (prescription == NULL) {
+        printf("未找到处方ID为 %d 的记录。\n", prescriptionId);
+        return;
+    }
+
+    patient = findPatientById(his, prescription->patientId);
+    doctor = findDoctorById(his, prescription->doctorId);
+    medicine = findMedicineById(his, prescription->medicineId);
+    record = findRecordById(his, prescription->recordId);
+
+    printf("\n=== 处方查询结果 ===\n");
+    printf("处方ID:%d\n", prescription->id);
+    printf("关联记录ID:%d\n", prescription->recordId);
+    printf("患者:%s（ID:%d）\n",
+           patient != NULL ? patient->name : "未知患者",
+           prescription->patientId);
+    printf("医生:%s（ID:%d）\n",
+           doctor != NULL ? doctor->name : "未知医生",
+           prescription->doctorId);
+    printf("药品:%s（ID:%d）\n",
+           medicine != NULL ? medicine->genericName : "未知药品",
+           prescription->medicineId);
+    printf("数量:%d\n", prescription->quantity);
+    if (record != NULL) {
+        printf("对应医疗记录: 记录ID:%d 类型:%s 内容:%s\n",
+               record->id,
+               record->type,
+               record->note);
+    } else {
+        printf("对应医疗记录: 未找到关联记录。\n");
     }
 }
 
@@ -1994,6 +2055,15 @@ void searchPatientInteractive(HIS *his) {
     searchPatientByName(his, keyword);
 }
 
+void searchPrescriptionInteractive(HIS *his) {
+    int prescriptionId = readInt("请输入处方ID: ");
+    if (prescriptionId <= 0) {
+        printf("查询失败：处方ID必须大于 0。\n");
+        return;
+    }
+    searchPrescriptionById(his, prescriptionId);
+}
+
 void showMainMenu(void) {
     printf("\n========== 轻量级 HIS 课程设计版 ==========\n");
     printf("1. 科室管理\n");
@@ -2062,9 +2132,10 @@ void showQueryMenu(void) {
     printf("1. 查看病房列表\n");
     printf("2. 查看医疗记录\n");
     printf("3. 查看处方记录\n");
-    printf("4. 查看综合统计\n");
-    printf("5. 查看床位利用率\n");
-    printf("6. 查看科室工作量统计\n");
+    printf("4. 按处方ID查询对应医疗记录\n");
+    printf("5. 查看综合统计\n");
+    printf("6. 查看床位利用率\n");
+    printf("7. 查看科室工作量统计\n");
     printf("0. 返回上一级\n");
 }
 
@@ -2229,12 +2300,15 @@ void queryMenuLoop(HIS *his) {
                 printPrescriptions(his);
                 break;
             case 4:
-                printStatistics(his);
+                searchPrescriptionInteractive(his);
                 break;
             case 5:
-                printBedUtilization(his);
+                printStatistics(his);
                 break;
             case 6:
+                printBedUtilization(his);
+                break;
+            case 7:
                 printDepartmentWorkload(his);
                 break;
             case 0:

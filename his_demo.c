@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -126,6 +127,44 @@ int readInt(const char *prompt) {
     }
 }
 
+int isBlankString(const char *text) {
+    while (*text != '\0') {
+        if (!isspace((unsigned char)*text)) {
+            return 0;
+        }
+        text++;
+    }
+    return 1;
+}
+
+int isValidGender(const char *gender) {
+    return strcmp(gender, "男") == 0 || strcmp(gender, "女") == 0;
+}
+
+int isDigitsOnly(const char *text) {
+    while (*text != '\0') {
+        if (!isdigit((unsigned char)*text)) {
+            return 0;
+        }
+        text++;
+    }
+    return 1;
+}
+
+int isValidPhone(const char *phone) {
+    size_t len = strlen(phone);
+    return len == 11 && isDigitsOnly(phone);
+}
+
+int isValidPatientName(const char *name) {
+    size_t len = strlen(name);
+    return !isBlankString(name) && len >= 2 && len < NAME_LEN;
+}
+
+int isValidAge(int age) {
+    return age >= 0 && age <= 120;
+}
+
 void initHIS(HIS *his) {
     his->departments = NULL;
     his->doctors = NULL;
@@ -252,6 +291,9 @@ Medicine *appendMedicine(HIS *his, const char *genericName, const char *brandNam
 Patient *appendPatient(HIS *his, const char *name, int age, const char *gender, const char *phone) {
     Patient *node = (Patient *)malloc(sizeof(Patient));
     Patient *tail;
+    if (!isValidPatientName(name) || !isValidAge(age) || !isValidGender(gender) || !isValidPhone(phone)) {
+        return NULL;
+    }
     if (node == NULL) {
         return NULL;
     }
@@ -393,7 +435,7 @@ Medicine *findMedicineById(HIS *his, int id) {
 int registerPatient(HIS *his, int patientId, int doctorId, const char *complaint) {
     Patient *patient = findPatientById(his, patientId);
     Doctor *doctor = findDoctorById(his, doctorId);
-    if (patient == NULL || doctor == NULL) {
+    if (patient == NULL || doctor == NULL || complaint == NULL || isBlankString(complaint)) {
         return 0;
     }
 
@@ -406,7 +448,10 @@ int admitPatient(HIS *his, int patientId, int wardId, const char *diagnosis) {
     Patient *patient = findPatientById(his, patientId);
     Ward *ward = findWardById(his, wardId);
     int doctorId;
-    if (patient == NULL || ward == NULL) {
+    if (patient == NULL || ward == NULL || diagnosis == NULL || isBlankString(diagnosis)) {
+        return 0;
+    }
+    if (patient->registeredDoctorId == 0 || patient->admittedWardId != 0) {
         return 0;
     }
     if (ward->usedBeds >= ward->totalBeds) {
@@ -545,6 +590,10 @@ void printPrescriptions(HIS *his) {
 void searchPatientByName(HIS *his, const char *keyword) {
     Patient *cur = his->patients;
     int found = 0;
+    if (keyword == NULL || isBlankString(keyword)) {
+        printf("查询关键字不能为空。\n");
+        return;
+    }
     printf("\n=== 患者查询结果 ===\n");
     while (cur != NULL) {
         if (strstr(cur->name, keyword) != NULL) {
@@ -915,6 +964,23 @@ void addPatientInteractive(HIS *his) {
     readLine("请输入性别: ", gender, sizeof(gender));
     readLine("请输入电话: ", phone, sizeof(phone));
 
+    if (!isValidPatientName(name)) {
+        printf("新增患者失败：姓名不能为空，且长度至少为 2 个字符。\n");
+        return;
+    }
+    if (!isValidAge(age)) {
+        printf("新增患者失败：年龄必须在 0 到 120 之间。\n");
+        return;
+    }
+    if (!isValidGender(gender)) {
+        printf("新增患者失败：性别只能输入“男”或“女”。\n");
+        return;
+    }
+    if (!isValidPhone(phone)) {
+        printf("新增患者失败：电话必须是 11 位数字。\n");
+        return;
+    }
+
     patient = appendPatient(his, name, age, gender, phone);
     if (patient != NULL) {
         printf("新增患者成功，患者ID为 %d。\n", patient->id);
@@ -929,6 +995,19 @@ void registerPatientInteractive(HIS *his) {
     char complaint[NOTE_LEN];
     readLine("请输入主诉: ", complaint, sizeof(complaint));
 
+    if (findPatientById(his, patientId) == NULL) {
+        printf("挂号失败：患者ID不存在。\n");
+        return;
+    }
+    if (findDoctorById(his, doctorId) == NULL) {
+        printf("挂号失败：医生ID不存在。\n");
+        return;
+    }
+    if (isBlankString(complaint)) {
+        printf("挂号失败：主诉不能为空。\n");
+        return;
+    }
+
     if (registerPatient(his, patientId, doctorId, complaint)) {
         printf("挂号成功。\n");
     } else {
@@ -940,7 +1019,30 @@ void admitPatientInteractive(HIS *his) {
     int patientId = readInt("请输入患者ID: ");
     int wardId = readInt("请输入病房ID: ");
     char diagnosis[NOTE_LEN];
+    Patient *patient = findPatientById(his, patientId);
+    Ward *ward = findWardById(his, wardId);
     readLine("请输入住院诊断: ", diagnosis, sizeof(diagnosis));
+
+    if (patient == NULL) {
+        printf("住院办理失败：患者ID不存在。\n");
+        return;
+    }
+    if (ward == NULL) {
+        printf("住院办理失败：病房ID不存在。\n");
+        return;
+    }
+    if (patient->registeredDoctorId == 0) {
+        printf("住院办理失败：患者还没有挂号，不能直接住院。\n");
+        return;
+    }
+    if (patient->admittedWardId != 0) {
+        printf("住院办理失败：该患者已经住院。\n");
+        return;
+    }
+    if (isBlankString(diagnosis)) {
+        printf("住院办理失败：住院诊断不能为空。\n");
+        return;
+    }
 
     if (admitPatient(his, patientId, wardId, diagnosis)) {
         printf("住院办理成功。\n");
@@ -955,6 +1057,23 @@ void prescribeMedicineInteractive(HIS *his) {
     int medicineId = readInt("请输入药品ID: ");
     int quantity = readInt("请输入开药数量: ");
 
+    if (findPatientById(his, patientId) == NULL) {
+        printf("处方录入失败：患者ID不存在。\n");
+        return;
+    }
+    if (findDoctorById(his, doctorId) == NULL) {
+        printf("处方录入失败：医生ID不存在。\n");
+        return;
+    }
+    if (findMedicineById(his, medicineId) == NULL) {
+        printf("处方录入失败：药品ID不存在。\n");
+        return;
+    }
+    if (quantity <= 0) {
+        printf("处方录入失败：开药数量必须大于 0。\n");
+        return;
+    }
+
     if (prescribeMedicine(his, patientId, doctorId, medicineId, quantity)) {
         printf("处方录入成功。\n");
     } else {
@@ -965,6 +1084,10 @@ void prescribeMedicineInteractive(HIS *his) {
 void searchPatientInteractive(HIS *his) {
     char keyword[NAME_LEN];
     readLine("请输入患者姓名关键字: ", keyword, sizeof(keyword));
+    if (isBlankString(keyword)) {
+        printf("查询失败：关键字不能为空。\n");
+        return;
+    }
     searchPatientByName(his, keyword);
 }
 

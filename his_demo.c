@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include "his.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,7 +82,7 @@ typedef struct Prescription {
     struct Prescription *next;
 } Prescription;
 
-typedef struct HIS {
+struct HIS {
     Department *departments;
     Doctor *doctors;
     Patient *patients;
@@ -96,7 +97,9 @@ typedef struct HIS {
     int nextMedicineId;
     int nextRecordId;
     int nextPrescriptionId;
-} HIS;
+};
+
+void initHIS(HIS *his);
 
 Ward *findWardById(HIS *his, int id);
 Medicine *findMedicineById(HIS *his, int id);
@@ -166,6 +169,15 @@ int isValidPatientName(const char *name) {
 
 int isValidAge(int age) {
     return age >= 0 && age <= 120;
+}
+
+HIS *createHIS(void) {
+    HIS *his = (HIS *)malloc(sizeof(HIS));
+    if (his == NULL) {
+        return NULL;
+    }
+    initHIS(his);
+    return his;
 }
 
 void initHIS(HIS *his) {
@@ -1188,6 +1200,14 @@ void cleanupHIS(HIS *his) {
     initHIS(his);
 }
 
+void destroyHIS(HIS *his) {
+    if (his == NULL) {
+        return;
+    }
+    cleanupHIS(his);
+    free(his);
+}
+
 void seedBaseDepartmentsAndWards(HIS *his, int *departmentIds, int *wardIds) {
     Department *department;
     department = appendDepartment(his, "内科");
@@ -1376,6 +1396,25 @@ void addDepartmentInteractive(HIS *his) {
     }
 }
 
+void modifyDepartmentInteractive(HIS *his) {
+    int departmentId = readInt("请输入要修改的科室ID: ");
+    Department *department = findDepartmentById(his, departmentId);
+    char name[NAME_LEN];
+
+    if (department == NULL) {
+        printf("修改科室失败：科室ID不存在。\n");
+        return;
+    }
+
+    printf("当前科室名称：%s\n", department->name);
+    readLine("请输入新的科室名称（直接回车保持不变）: ", name, sizeof(name));
+    if (!isBlankString(name)) {
+        strncpy(department->name, name, NAME_LEN - 1);
+        department->name[NAME_LEN - 1] = '\0';
+    }
+    printf("修改科室成功。\n");
+}
+
 void deleteDepartmentInteractive(HIS *his) {
     int departmentId = readInt("请输入要删除的科室ID: ");
     if (findDepartmentById(his, departmentId) == NULL) {
@@ -1418,6 +1457,42 @@ void addDoctorInteractive(HIS *his) {
     } else {
         printf("新增医生失败。\n");
     }
+}
+
+void modifyDoctorInteractive(HIS *his) {
+    int doctorId = readInt("请输入要修改的医生ID: ");
+    Doctor *doctor = findDoctorById(his, doctorId);
+    char name[NAME_LEN];
+    char title[TITLE_LEN];
+    char departmentBuffer[INPUT_LEN];
+    int departmentId;
+
+    if (doctor == NULL) {
+        printf("修改医生失败：医生ID不存在。\n");
+        return;
+    }
+
+    printf("当前姓名：%s 当前职称：%s 当前科室ID：%d\n", doctor->name, doctor->title, doctor->departmentId);
+    readLine("请输入新的医生姓名（直接回车保持不变）: ", name, sizeof(name));
+    readLine("请输入新的职称（直接回车保持不变）: ", title, sizeof(title));
+    readLine("请输入新的科室ID（直接回车保持不变）: ", departmentBuffer, sizeof(departmentBuffer));
+
+    if (!isBlankString(name)) {
+        strncpy(doctor->name, name, NAME_LEN - 1);
+        doctor->name[NAME_LEN - 1] = '\0';
+    }
+    if (!isBlankString(title)) {
+        strncpy(doctor->title, title, TITLE_LEN - 1);
+        doctor->title[TITLE_LEN - 1] = '\0';
+    }
+    if (!isBlankString(departmentBuffer)) {
+        if (sscanf(departmentBuffer, "%d", &departmentId) != 1 || findDepartmentById(his, departmentId) == NULL) {
+            printf("修改医生失败：新的科室ID无效。\n");
+            return;
+        }
+        doctor->departmentId = departmentId;
+    }
+    printf("修改医生成功。\n");
 }
 
 void deleteDoctorInteractive(HIS *his) {
@@ -1467,6 +1542,64 @@ void addMedicineInteractive(HIS *his) {
     }
 }
 
+void modifyPatientInteractive(HIS *his) {
+    int patientId = readInt("请输入要修改的患者ID: ");
+    Patient *patient = findPatientById(his, patientId);
+    char name[NAME_LEN];
+    char gender[16];
+    char phone[ID_LEN];
+    char ageBuffer[INPUT_LEN];
+    int age;
+
+    if (patient == NULL) {
+        printf("修改患者失败：患者ID不存在。\n");
+        return;
+    }
+
+    printf("当前姓名：%s 当前年龄：%d 当前性别：%s 当前电话：%s\n",
+           patient->name,
+           patient->age,
+           patient->gender,
+           patient->phone);
+    readLine("请输入新的姓名（直接回车保持不变）: ", name, sizeof(name));
+    readLine("请输入新的年龄（直接回车保持不变）: ", ageBuffer, sizeof(ageBuffer));
+    readLine("请输入新的性别（直接回车保持不变）: ", gender, sizeof(gender));
+    readLine("请输入新的电话（直接回车保持不变）: ", phone, sizeof(phone));
+
+    if (!isBlankString(name)) {
+        if (!isValidPatientName(name)) {
+            printf("修改患者失败：姓名格式不正确。\n");
+            return;
+        }
+        strncpy(patient->name, name, NAME_LEN - 1);
+        patient->name[NAME_LEN - 1] = '\0';
+    }
+    if (!isBlankString(ageBuffer)) {
+        if (sscanf(ageBuffer, "%d", &age) != 1 || !isValidAge(age)) {
+            printf("修改患者失败：年龄格式不正确。\n");
+            return;
+        }
+        patient->age = age;
+    }
+    if (!isBlankString(gender)) {
+        if (!isValidGender(gender)) {
+            printf("修改患者失败：性别只能输入“男”或“女”。\n");
+            return;
+        }
+        strncpy(patient->gender, gender, sizeof(patient->gender) - 1);
+        patient->gender[sizeof(patient->gender) - 1] = '\0';
+    }
+    if (!isBlankString(phone)) {
+        if (!isValidPhone(phone)) {
+            printf("修改患者失败：电话必须是 11 位数字。\n");
+            return;
+        }
+        strncpy(patient->phone, phone, ID_LEN - 1);
+        patient->phone[ID_LEN - 1] = '\0';
+    }
+    printf("修改患者成功。\n");
+}
+
 void deleteMedicineInteractive(HIS *his) {
     int medicineId = readInt("请输入要删除的药品ID: ");
     if (findMedicineById(his, medicineId) == NULL) {
@@ -1478,6 +1611,56 @@ void deleteMedicineInteractive(HIS *his) {
     } else {
         printf("删除药品失败：该药品已有处方关联。\n");
     }
+}
+
+void modifyMedicineInteractive(HIS *his) {
+    int medicineId = readInt("请输入要修改的药品ID: ");
+    Medicine *medicine = findMedicineById(his, medicineId);
+    char genericName[NAME_LEN];
+    char brandName[NAME_LEN];
+    char stockBuffer[INPUT_LEN];
+    char priceBuffer[INPUT_LEN];
+    int stock;
+    double unitPrice;
+
+    if (medicine == NULL) {
+        printf("修改药品失败：药品ID不存在。\n");
+        return;
+    }
+
+    printf("当前通用名：%s 当前商品名：%s 当前库存：%d 当前单价：%.2f\n",
+           medicine->genericName,
+           medicine->brandName,
+           medicine->stock,
+           medicine->unitPrice);
+    readLine("请输入新的通用名（直接回车保持不变）: ", genericName, sizeof(genericName));
+    readLine("请输入新的商品名（直接回车保持不变）: ", brandName, sizeof(brandName));
+    readLine("请输入新的库存（直接回车保持不变）: ", stockBuffer, sizeof(stockBuffer));
+    readLine("请输入新的单价（直接回车保持不变）: ", priceBuffer, sizeof(priceBuffer));
+
+    if (!isBlankString(genericName)) {
+        strncpy(medicine->genericName, genericName, NAME_LEN - 1);
+        medicine->genericName[NAME_LEN - 1] = '\0';
+    }
+    if (!isBlankString(brandName)) {
+        strncpy(medicine->brandName, brandName, NAME_LEN - 1);
+        medicine->brandName[NAME_LEN - 1] = '\0';
+    }
+    if (!isBlankString(stockBuffer)) {
+        if (sscanf(stockBuffer, "%d", &stock) != 1 || stock < 0) {
+            printf("修改药品失败：库存格式不正确。\n");
+            return;
+        }
+        medicine->stock = stock;
+    }
+    if (!isBlankString(priceBuffer)) {
+        if (sscanf(priceBuffer, "%lf", &unitPrice) != 1 || unitPrice < 0) {
+            printf("修改药品失败：单价格式不正确。\n");
+            return;
+        }
+        medicine->unitPrice = unitPrice;
+    }
+    printf("修改药品成功。\n");
 }
 
 void adjustMedicineStockInteractive(HIS *his) {
@@ -1492,6 +1675,172 @@ void adjustMedicineStockInteractive(HIS *his) {
     } else {
         printf("库存调整失败：调整后库存不能小于 0。\n");
     }
+}
+
+void importDepartmentsFromFileInteractive(HIS *his) {
+    char filename[INPUT_LEN];
+    char line[INPUT_LEN];
+    int imported = 0;
+    int skipped = 0;
+    FILE *fp;
+
+    readLine("请输入科室导入文件名: ", filename, sizeof(filename));
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("导入失败：无法打开文件。\n");
+        return;
+    }
+
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        trimNewline(line);
+        if (isBlankString(line) || strcmp(line, "name") == 0) {
+            continue;
+        }
+        if (appendDepartment(his, line) != NULL) {
+            imported++;
+        } else {
+            skipped++;
+        }
+    }
+    fclose(fp);
+    printf("科室导入完成：成功 %d 条，跳过 %d 条。\n", imported, skipped);
+}
+
+void importDoctorsFromFileInteractive(HIS *his) {
+    char filename[INPUT_LEN];
+    char line[INPUT_LEN];
+    int imported = 0;
+    int skipped = 0;
+    FILE *fp;
+
+    readLine("请输入医生导入文件名: ", filename, sizeof(filename));
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("导入失败：无法打开文件。\n");
+        return;
+    }
+
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        char *name;
+        char *departmentStr;
+        char *title;
+        int departmentId;
+        trimNewline(line);
+        if (isBlankString(line)) {
+            continue;
+        }
+        name = strtok(line, ",");
+        departmentStr = strtok(NULL, ",");
+        title = strtok(NULL, ",");
+        if (name == NULL || departmentStr == NULL || title == NULL || strcmp(name, "name") == 0) {
+            skipped++;
+            continue;
+        }
+        if (sscanf(departmentStr, "%d", &departmentId) != 1 || findDepartmentById(his, departmentId) == NULL) {
+            skipped++;
+            continue;
+        }
+        if (appendDoctor(his, name, departmentId, title) != NULL) {
+            imported++;
+        } else {
+            skipped++;
+        }
+    }
+    fclose(fp);
+    printf("医生导入完成：成功 %d 条，跳过 %d 条。\n", imported, skipped);
+}
+
+void importPatientsFromFileInteractive(HIS *his) {
+    char filename[INPUT_LEN];
+    char line[INPUT_LEN];
+    int imported = 0;
+    int skipped = 0;
+    FILE *fp;
+
+    readLine("请输入患者导入文件名: ", filename, sizeof(filename));
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("导入失败：无法打开文件。\n");
+        return;
+    }
+
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        char *name;
+        char *ageStr;
+        char *gender;
+        char *phone;
+        int age;
+        trimNewline(line);
+        if (isBlankString(line)) {
+            continue;
+        }
+        name = strtok(line, ",");
+        ageStr = strtok(NULL, ",");
+        gender = strtok(NULL, ",");
+        phone = strtok(NULL, ",");
+        if (name == NULL || ageStr == NULL || gender == NULL || phone == NULL || strcmp(name, "name") == 0) {
+            skipped++;
+            continue;
+        }
+        if (sscanf(ageStr, "%d", &age) != 1) {
+            skipped++;
+            continue;
+        }
+        if (appendPatient(his, name, age, gender, phone) != NULL) {
+            imported++;
+        } else {
+            skipped++;
+        }
+    }
+    fclose(fp);
+    printf("患者导入完成：成功 %d 条，跳过 %d 条。\n", imported, skipped);
+}
+
+void importMedicinesFromFileInteractive(HIS *his) {
+    char filename[INPUT_LEN];
+    char line[INPUT_LEN];
+    int imported = 0;
+    int skipped = 0;
+    FILE *fp;
+
+    readLine("请输入药品导入文件名: ", filename, sizeof(filename));
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("导入失败：无法打开文件。\n");
+        return;
+    }
+
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        char *genericName;
+        char *brandName;
+        char *stockStr;
+        char *priceStr;
+        int stock;
+        double unitPrice;
+        trimNewline(line);
+        if (isBlankString(line)) {
+            continue;
+        }
+        genericName = strtok(line, ",");
+        brandName = strtok(NULL, ",");
+        stockStr = strtok(NULL, ",");
+        priceStr = strtok(NULL, ",");
+        if (genericName == NULL || brandName == NULL || stockStr == NULL || priceStr == NULL || strcmp(genericName, "genericName") == 0) {
+            skipped++;
+            continue;
+        }
+        if (sscanf(stockStr, "%d", &stock) != 1 || sscanf(priceStr, "%lf", &unitPrice) != 1) {
+            skipped++;
+            continue;
+        }
+        if (appendMedicine(his, genericName, brandName, stock, unitPrice) != NULL) {
+            imported++;
+        } else {
+            skipped++;
+        }
+    }
+    fclose(fp);
+    printf("药品导入完成：成功 %d 条，跳过 %d 条。\n", imported, skipped);
 }
 
 void registerPatientInteractive(HIS *his) {
@@ -1613,7 +1962,9 @@ void showDepartmentMenu(void) {
     printf("\n--- 科室管理 ---\n");
     printf("1. 查看科室列表\n");
     printf("2. 新增科室\n");
-    printf("3. 删除科室\n");
+    printf("3. 修改科室\n");
+    printf("4. 删除科室\n");
+    printf("5. 从文件导入科室\n");
     printf("0. 返回上一级\n");
 }
 
@@ -1621,7 +1972,9 @@ void showDoctorMenu(void) {
     printf("\n--- 医生管理 ---\n");
     printf("1. 查看医生列表\n");
     printf("2. 新增医生\n");
-    printf("3. 删除医生\n");
+    printf("3. 修改医生\n");
+    printf("4. 删除医生\n");
+    printf("5. 从文件导入医生\n");
     printf("0. 返回上一级\n");
 }
 
@@ -1629,8 +1982,10 @@ void showPatientMenu(void) {
     printf("\n--- 患者管理 ---\n");
     printf("1. 查看患者列表\n");
     printf("2. 新增患者\n");
-    printf("3. 删除患者\n");
-    printf("4. 患者姓名查询\n");
+    printf("3. 修改患者\n");
+    printf("4. 删除患者\n");
+    printf("5. 患者姓名查询\n");
+    printf("6. 从文件导入患者\n");
     printf("0. 返回上一级\n");
 }
 
@@ -1638,8 +1993,10 @@ void showMedicineMenu(void) {
     printf("\n--- 药品管理 ---\n");
     printf("1. 查看药品库存\n");
     printf("2. 新增药品\n");
-    printf("3. 删除药品\n");
-    printf("4. 调整药品库存\n");
+    printf("3. 修改药品\n");
+    printf("4. 删除药品\n");
+    printf("5. 调整药品库存\n");
+    printf("6. 从文件导入药品\n");
     printf("0. 返回上一级\n");
 }
 
@@ -1675,7 +2032,13 @@ void departmentMenuLoop(HIS *his) {
                 addDepartmentInteractive(his);
                 break;
             case 3:
+                modifyDepartmentInteractive(his);
+                break;
+            case 4:
                 deleteDepartmentInteractive(his);
+                break;
+            case 5:
+                importDepartmentsFromFileInteractive(his);
                 break;
             case 0:
                 return;
@@ -1698,7 +2061,13 @@ void doctorMenuLoop(HIS *his) {
                 addDoctorInteractive(his);
                 break;
             case 3:
+                modifyDoctorInteractive(his);
+                break;
+            case 4:
                 deleteDoctorInteractive(his);
+                break;
+            case 5:
+                importDoctorsFromFileInteractive(his);
                 break;
             case 0:
                 return;
@@ -1721,10 +2090,16 @@ void patientMenuLoop(HIS *his) {
                 addPatientInteractive(his);
                 break;
             case 3:
-                deletePatientInteractive(his);
+                modifyPatientInteractive(his);
                 break;
             case 4:
+                deletePatientInteractive(his);
+                break;
+            case 5:
                 searchPatientInteractive(his);
+                break;
+            case 6:
+                importPatientsFromFileInteractive(his);
                 break;
             case 0:
                 return;
@@ -1747,10 +2122,16 @@ void medicineMenuLoop(HIS *his) {
                 addMedicineInteractive(his);
                 break;
             case 3:
-                deleteMedicineInteractive(his);
+                modifyMedicineInteractive(his);
                 break;
             case 4:
+                deleteMedicineInteractive(his);
+                break;
+            case 5:
                 adjustMedicineStockInteractive(his);
+                break;
+            case 6:
+                importMedicinesFromFileInteractive(his);
                 break;
             case 0:
                 return;
@@ -1809,54 +2190,6 @@ void queryMenuLoop(HIS *his) {
                 break;
             case 0:
                 return;
-            default:
-                printf("菜单编号无效，请重新输入。\n");
-        }
-    }
-}
-
-int main(void) {
-    HIS his;
-    int choice;
-
-    initHIS(&his);
-    buildCourseDataset(&his);
-
-    printf("系统已初始化：当前已生成 5 个科室、20 名医生、120 名患者、35 名住院患者、30 种药品。\n");
-
-    while (1) {
-        showMainMenu();
-        choice = readInt("请输入菜单编号: ");
-        switch (choice) {
-            case 1:
-                departmentMenuLoop(&his);
-                break;
-            case 2:
-                doctorMenuLoop(&his);
-                break;
-            case 3:
-                patientMenuLoop(&his);
-                break;
-            case 4:
-                medicineMenuLoop(&his);
-                break;
-            case 5:
-                businessMenuLoop(&his);
-                break;
-            case 6:
-                queryMenuLoop(&his);
-                break;
-            case 7:
-                exportAllData(&his);
-                break;
-            case 8:
-                buildCourseDataset(&his);
-                printf("已重新生成课程设计样例数据。\n");
-                break;
-            case 0:
-                cleanupHIS(&his);
-                printf("感谢使用，系统已退出。\n");
-                return 0;
             default:
                 printf("菜单编号无效，请重新输入。\n");
         }

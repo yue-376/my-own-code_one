@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -std=c11
 TARGET = his_demo
-SRC = his_demo.c
+SRC = main.c his_demo.c
 
 all: $(TARGET)
 

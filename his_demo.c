@@ -978,6 +978,36 @@ void printStatistics(HIS *his) {
     printf("药品种类: %d\n", medicineCount);
 }
 
+void printBedUtilization(HIS *his) {
+    Ward *ward = his->wards;
+    int totalBeds = 0;
+    int usedBeds = 0;
+
+    printf("\n=== 床位利用率统计 ===\n");
+    while (ward != NULL) {
+        double utilization = 0.0;
+        Department *department = findDepartmentById(his, ward->departmentId);
+        if (ward->totalBeds > 0) {
+            utilization = (double)ward->usedBeds * 100.0 / (double)ward->totalBeds;
+        }
+        printf("病房:%s 科室:%s 已用床位:%d 总床位:%d 利用率:%.2f%%\n",
+               ward->name,
+               department != NULL ? department->name : "未知",
+               ward->usedBeds,
+               ward->totalBeds,
+               utilization);
+        totalBeds += ward->totalBeds;
+        usedBeds += ward->usedBeds;
+        ward = ward->next;
+    }
+
+    if (totalBeds > 0) {
+        printf("全院床位利用率: %.2f%% (%d/%d)\n", (double)usedBeds * 100.0 / (double)totalBeds, usedBeds, totalBeds);
+    } else {
+        printf("当前没有病房数据。\n");
+    }
+}
+
 void printDepartmentWorkload(HIS *his) {
     Department *department = his->departments;
     printf("\n=== 科室工作量统计 ===\n");
@@ -1627,7 +1657,8 @@ void showQueryMenu(void) {
     printf("2. 查看医疗记录\n");
     printf("3. 查看处方记录\n");
     printf("4. 查看综合统计\n");
-    printf("5. 查看科室工作量统计\n");
+    printf("5. 查看床位利用率\n");
+    printf("6. 查看科室工作量统计\n");
     printf("0. 返回上一级\n");
 }
 
@@ -1771,6 +1802,9 @@ void queryMenuLoop(HIS *his) {
                 printStatistics(his);
                 break;
             case 5:
+                printBedUtilization(his);
+                break;
+            case 6:
                 printDepartmentWorkload(his);
                 break;
             case 0:

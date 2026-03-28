@@ -1168,51 +1168,6 @@ int exportPatients(HIS *his, const char *filename) {
     return 1;
 }
 
-int exportDepartments(HIS *his, const char *filename) {
-    FILE *fp = fopen(filename, "w");
-    Department *cur = his->departments;
-    if (fp == NULL) {
-        return 0;
-    }
-    fprintf(fp, "id,name\n");
-    while (cur != NULL) {
-        fprintf(fp, "%d,%s\n", cur->id, cur->name);
-        cur = cur->next;
-    }
-    fclose(fp);
-    return 1;
-}
-
-int exportDoctors(HIS *his, const char *filename) {
-    FILE *fp = fopen(filename, "w");
-    Doctor *cur = his->doctors;
-    if (fp == NULL) {
-        return 0;
-    }
-    fprintf(fp, "id,name,departmentId,title\n");
-    while (cur != NULL) {
-        fprintf(fp, "%d,%s,%d,%s\n", cur->id, cur->name, cur->departmentId, cur->title);
-        cur = cur->next;
-    }
-    fclose(fp);
-    return 1;
-}
-
-int exportWards(HIS *his, const char *filename) {
-    FILE *fp = fopen(filename, "w");
-    Ward *cur = his->wards;
-    if (fp == NULL) {
-        return 0;
-    }
-    fprintf(fp, "id,name,departmentId,totalBeds,usedBeds\n");
-    while (cur != NULL) {
-        fprintf(fp, "%d,%s,%d,%d,%d\n", cur->id, cur->name, cur->departmentId, cur->totalBeds, cur->usedBeds);
-        cur = cur->next;
-    }
-    fclose(fp);
-    return 1;
-}
-
 int exportRecords(HIS *his, const char *filename) {
     FILE *fp = fopen(filename, "w");
     Record *cur = his->records;
@@ -1266,15 +1221,12 @@ int exportMedicines(HIS *his, const char *filename) {
 }
 
 void exportAllData(HIS *his) {
-    int ok1 = exportDepartments(his, "departments.txt");
-    int ok2 = exportDoctors(his, "doctors.txt");
-    int ok3 = exportWards(his, "wards.txt");
-    int ok4 = exportPatients(his, "patients.txt");
-    int ok5 = exportRecords(his, "records.txt");
-    int ok6 = exportPrescriptions(his, "prescriptions.txt");
-    int ok7 = exportMedicines(his, "medicines.txt");
-    if (ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7) {
-        printf("已导出 departments.txt、doctors.txt、wards.txt、patients.txt、records.txt、prescriptions.txt、medicines.txt。\n");
+    int ok1 = exportPatients(his, "patients.txt");
+    int ok2 = exportRecords(his, "records.txt");
+    int ok3 = exportPrescriptions(his, "prescriptions.txt");
+    int ok4 = exportMedicines(his, "medicines.txt");
+    if (ok1 && ok2 && ok3 && ok4) {
+        printf("已导出 patients.txt、records.txt、prescriptions.txt、medicines.txt。\n");
     } else {
         printf("导出失败，请检查文件权限。\n");
     }
@@ -1485,241 +1437,6 @@ void buildCourseDataset(HIS *his) {
             prescribeMedicine(his, patient->id, doctorId, medicineId, (i % 3) + 1);
         }
     }
-}
-
-int loadDataFromDefaultFiles(HIS *his) {
-    char line[INPUT_LEN];
-    int maxDepartmentId = 0;
-    int maxDoctorId = 0;
-    int maxWardId = 0;
-    int maxPatientId = 0;
-    int maxMedicineId = 0;
-    int maxRecordId = 0;
-    int maxPrescriptionId = 0;
-    FILE *fp;
-
-    cleanupHIS(his);
-
-    fp = fopen("departments.txt", "r");
-    if (fp == NULL) {
-        return 0;
-    }
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        int id;
-        char name[NAME_LEN];
-        trimNewline(line);
-        if (isBlankString(line) || strncmp(line, "id,", 3) == 0) {
-            continue;
-        }
-        if (sscanf(line, "%d,%63[^\n]", &id, name) == 2) {
-            Department *department = appendDepartment(his, name);
-            if (department == NULL) {
-                fclose(fp);
-                return 0;
-            }
-            department->id = id;
-            if (id > maxDepartmentId) {
-                maxDepartmentId = id;
-            }
-        }
-    }
-    fclose(fp);
-
-    fp = fopen("doctors.txt", "r");
-    if (fp == NULL) {
-        cleanupHIS(his);
-        return 0;
-    }
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        int id;
-        int departmentId;
-        char name[NAME_LEN];
-        char title[TITLE_LEN];
-        trimNewline(line);
-        if (isBlankString(line) || strncmp(line, "id,", 3) == 0) {
-            continue;
-        }
-        if (sscanf(line, "%d,%63[^,],%d,%31[^\n]", &id, name, &departmentId, title) == 4) {
-            Doctor *doctor = appendDoctor(his, name, departmentId, title);
-            if (doctor == NULL) {
-                fclose(fp);
-                cleanupHIS(his);
-                return 0;
-            }
-            doctor->id = id;
-            if (id > maxDoctorId) {
-                maxDoctorId = id;
-            }
-        }
-    }
-    fclose(fp);
-
-    fp = fopen("wards.txt", "r");
-    if (fp == NULL) {
-        cleanupHIS(his);
-        return 0;
-    }
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        int id;
-        int departmentId;
-        int totalBeds;
-        int usedBeds;
-        char name[NAME_LEN];
-        trimNewline(line);
-        if (isBlankString(line) || strncmp(line, "id,", 3) == 0) {
-            continue;
-        }
-        if (sscanf(line, "%d,%63[^,],%d,%d,%d", &id, name, &departmentId, &totalBeds, &usedBeds) == 5) {
-            Ward *ward = appendWard(his, name, departmentId, totalBeds);
-            if (ward == NULL) {
-                fclose(fp);
-                cleanupHIS(his);
-                return 0;
-            }
-            ward->id = id;
-            ward->usedBeds = usedBeds;
-            if (id > maxWardId) {
-                maxWardId = id;
-            }
-        }
-    }
-    fclose(fp);
-
-    fp = fopen("patients.txt", "r");
-    if (fp == NULL) {
-        cleanupHIS(his);
-        return 0;
-    }
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        int id;
-        int age;
-        int doctorId;
-        int wardId;
-        int bedNo;
-        char name[NAME_LEN];
-        char gender[16];
-        char phone[ID_LEN];
-        trimNewline(line);
-        if (isBlankString(line) || strncmp(line, "id,", 3) == 0) {
-            continue;
-        }
-        if (sscanf(line, "%d,%63[^,],%d,%15[^,],%31[^,],%d,%d,%d",
-                   &id, name, &age, gender, phone, &doctorId, &wardId, &bedNo) == 8) {
-            Patient *patient = appendPatient(his, name, age, gender, phone);
-            if (patient == NULL) {
-                fclose(fp);
-                return 0;
-            }
-            patient->id = id;
-            patient->registeredDoctorId = doctorId;
-            patient->admittedWardId = wardId;
-            patient->admittedBedNo = bedNo;
-            if (id > maxPatientId) {
-                maxPatientId = id;
-            }
-        }
-    }
-    fclose(fp);
-
-    fp = fopen("medicines.txt", "r");
-    if (fp == NULL) {
-        cleanupHIS(his);
-        return 0;
-    }
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        int id;
-        int stock;
-        double unitPrice;
-        char genericName[NAME_LEN];
-        char brandName[NAME_LEN];
-        trimNewline(line);
-        if (isBlankString(line) || strncmp(line, "id,", 3) == 0) {
-            continue;
-        }
-        if (sscanf(line, "%d,%63[^,],%63[^,],%d,%lf", &id, genericName, brandName, &stock, &unitPrice) == 5) {
-            Medicine *medicine = appendMedicine(his, genericName, brandName, stock, unitPrice);
-            if (medicine == NULL) {
-                fclose(fp);
-                cleanupHIS(his);
-                return 0;
-            }
-            medicine->id = id;
-            if (id > maxMedicineId) {
-                maxMedicineId = id;
-            }
-        }
-    }
-    fclose(fp);
-
-    fp = fopen("records.txt", "r");
-    if (fp == NULL) {
-        cleanupHIS(his);
-        return 0;
-    }
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        int id;
-        int patientId;
-        int doctorId;
-        char type[TYPE_LEN];
-        char note[NOTE_LEN];
-        trimNewline(line);
-        if (isBlankString(line) || strncmp(line, "id,", 3) == 0) {
-            continue;
-        }
-        if (sscanf(line, "%d,%d,%d,%31[^,],%127[^\n]", &id, &patientId, &doctorId, type, note) == 5) {
-            Record *record = appendRecord(his, patientId, doctorId, type, note);
-            if (record == NULL) {
-                fclose(fp);
-                cleanupHIS(his);
-                return 0;
-            }
-            record->id = id;
-            if (id > maxRecordId) {
-                maxRecordId = id;
-            }
-        }
-    }
-    fclose(fp);
-
-    fp = fopen("prescriptions.txt", "r");
-    if (fp == NULL) {
-        cleanupHIS(his);
-        return 0;
-    }
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        int id;
-        int recordId;
-        int patientId;
-        int doctorId;
-        int medicineId;
-        int quantity;
-        trimNewline(line);
-        if (isBlankString(line) || strncmp(line, "id,", 3) == 0) {
-            continue;
-        }
-        if (sscanf(line, "%d,%d,%d,%d,%d,%d", &id, &recordId, &patientId, &doctorId, &medicineId, &quantity) == 6) {
-            Prescription *prescription = appendPrescription(his, recordId, patientId, doctorId, medicineId, quantity);
-            if (prescription == NULL) {
-                fclose(fp);
-                cleanupHIS(his);
-                return 0;
-            }
-            prescription->id = id;
-            if (id > maxPrescriptionId) {
-                maxPrescriptionId = id;
-            }
-        }
-    }
-    fclose(fp);
-
-    his->nextPatientId = maxPatientId + 1;
-    his->nextMedicineId = maxMedicineId + 1;
-    his->nextRecordId = maxRecordId + 1;
-    his->nextPrescriptionId = maxPrescriptionId + 1;
-    his->nextDepartmentId = maxDepartmentId + 1;
-    his->nextDoctorId = maxDoctorId + 1;
-    his->nextWardId = maxWardId + 1;
-    return 1;
 }
 
 void addPatientInteractive(HIS *his) {
@@ -2356,7 +2073,7 @@ void showMainMenu(void) {
     printf("5. 诊疗业务\n");
     printf("6. 查询统计\n");
     printf("7. 导出 txt 数据文件\n");
-    printf("8. 从默认文件重新加载数据\n");
+    printf("8. 重新生成课程设计样例数据\n");
     printf("0. 退出系统\n");
 }
 

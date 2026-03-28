@@ -12,7 +12,6 @@ typedef struct HIS HIS;
 HIS *createHIS(void);
 void destroyHIS(HIS *his);
 void buildCourseDataset(HIS *his);
-int loadDataFromDefaultFiles(HIS *his);
 void showMainMenu(void);
 int readInt(const char *prompt);
 void departmentMenuLoop(HIS *his);

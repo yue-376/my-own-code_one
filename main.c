@@ -16,8 +16,7 @@ int main(void) {
         return 1;
     }
 
-    buildCourseDataset(his);
-    printf("系统已初始化：当前已生成 5 个科室、20 名医生、135 名患者、35 名住院患者、30 种药品。\n");
+    printf("系统已启动：未自动生成样例数据，请按需从文件导入。\n");
 
     while (1) {
         showMainMenu();
@@ -45,8 +44,7 @@ int main(void) {
                 exportAllData(his);
                 break;
             case 8:
-                buildCourseDataset(his);
-                printf("已重新生成课程设计样例数据。\n");
+                printf("该版本已禁用样例数据自动生成，请使用各管理菜单中的“从文件导入”功能。\n");
                 break;
             case 0:
                 destroyHIS(his);

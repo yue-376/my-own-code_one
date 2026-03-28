@@ -113,8 +113,9 @@ Medicine *findMedicineById(HIS *his, int id);
 
 void trimNewline(char *text) {
     size_t len = strlen(text);
-    if (len > 0 && text[len - 1] == '\n') {
+    while (len > 0 && (text[len - 1] == '\n' || text[len - 1] == '\r')) {
         text[len - 1] = '\0';
+        len--;
     }
 }
 
@@ -1802,11 +1803,21 @@ void importDepartmentsFromFileInteractive(HIS *his) {
     }
 
     while (fgets(line, sizeof(line), fp) != NULL) {
+        char *name = line;
         trimNewline(line);
-        if (isBlankString(line) || strcmp(line, "name") == 0) {
+        if (isBlankString(line) || strcmp(line, "name") == 0 || strcmp(line, "id,name") == 0) {
             continue;
         }
-        if (appendDepartment(his, line) != NULL) {
+        if (strchr(line, ',') != NULL) {
+            char *idPart = strtok(line, ",");
+            char *namePart = strtok(NULL, ",");
+            if (idPart == NULL || namePart == NULL) {
+                skipped++;
+                continue;
+            }
+            name = namePart;
+        }
+        if (appendDepartment(his, name) != NULL) {
             imported++;
         } else {
             skipped++;
@@ -1831,17 +1842,36 @@ void importDoctorsFromFileInteractive(HIS *his) {
     }
 
     while (fgets(line, sizeof(line), fp) != NULL) {
+        char lineCopy[INPUT_LEN];
         char *name;
         char *departmentStr;
         char *title;
+        char *possibleTitle;
         int departmentId;
         trimNewline(line);
         if (isBlankString(line)) {
             continue;
         }
+        strncpy(lineCopy, line, sizeof(lineCopy) - 1);
+        lineCopy[sizeof(lineCopy) - 1] = '\0';
         name = strtok(line, ",");
         departmentStr = strtok(NULL, ",");
         title = strtok(NULL, ",");
+        if (name != NULL && strcmp(name, "id") == 0) {
+            name = departmentStr;
+            departmentStr = title;
+            title = strtok(NULL, ",");
+        }
+        if (name != NULL && isDigitsOnly(name)) {
+            char *idField = strtok(lineCopy, ",");
+            (void)idField;
+            name = strtok(NULL, ",");
+            departmentStr = strtok(NULL, ",");
+            possibleTitle = strtok(NULL, ",");
+            if (possibleTitle != NULL) {
+                title = possibleTitle;
+            }
+        }
         if (name == NULL || departmentStr == NULL || title == NULL || strcmp(name, "name") == 0) {
             skipped++;
             continue;

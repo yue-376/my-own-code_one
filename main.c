@@ -16,8 +16,11 @@ int main(void) {
         return 1;
     }
 
-    buildCourseDataset(his);
-    printf("系统已初始化：当前已生成 5 个科室、20 名医生、135 名患者、35 名住院患者、30 种药品。\n");
+    if (loadDataFromDefaultFiles(his)) {
+        printf("系统已初始化：已从 patients.txt、records.txt、prescriptions.txt、medicines.txt 读取数据。\n");
+    } else {
+        printf("系统初始化警告：默认数据文件读取失败，当前为未加载数据状态。\n");
+    }
 
     while (1) {
         showMainMenu();
@@ -45,8 +48,11 @@ int main(void) {
                 exportAllData(his);
                 break;
             case 8:
-                buildCourseDataset(his);
-                printf("已重新生成课程设计样例数据。\n");
+                if (loadDataFromDefaultFiles(his)) {
+                    printf("已从默认文件重新加载数据。\n");
+                } else {
+                    printf("重新加载失败：请检查 patients.txt、records.txt、prescriptions.txt、medicines.txt。\n");
+                }
                 break;
             case 0:
                 destroyHIS(his);

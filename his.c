@@ -2246,6 +2246,7 @@ void showMainMenu(void) {
     printf("5. 诊疗业务\n");
     printf("6. 查询统计\n");
     printf("7. 导出 txt 数据文件\n");
+    printf("8. 提示：请改用文件导入数据\n");
     printf("8. 从默认文件重新加载数据\n");
     printf("0. 退出系统\n");
 }

@@ -16,6 +16,7 @@ int main(void) {
         return 1;
     }
 
+    printf("系统已启动：未自动生成样例数据，请按需从文件导入。\n");
     if (loadDataFromDefaultFiles(his)) {
         printf("系统已初始化：已从 patients.txt、records.txt、prescriptions.txt、medicines.txt 读取数据。\n");
     } else {
@@ -48,6 +49,7 @@ int main(void) {
                 exportAllData(his);
                 break;
             case 8:
+                printf("该版本已禁用样例数据自动生成，请使用各管理菜单中的“从文件导入”功能。\n");
                 if (loadDataFromDefaultFiles(his)) {
                     printf("已从默认文件重新加载数据。\n");
                 } else {

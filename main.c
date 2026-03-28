@@ -18,7 +18,7 @@ int main(void) {
 
     printf("系统已启动：未自动生成样例数据，请按需从文件导入。\n");
     if (loadDataFromDefaultFiles(his)) {
-        printf("系统已初始化：已从 patients.txt、records.txt、prescriptions.txt、medicines.txt 读取数据。\n");
+        printf("系统已初始化：已从 departments.txt、doctors.txt、wards.txt、patients.txt、records.txt、prescriptions.txt、medicines.txt 读取数据。\n");
     } else {
         printf("系统初始化警告：默认数据文件读取失败，当前为未加载数据状态。\n");
     }
@@ -53,7 +53,7 @@ int main(void) {
                 if (loadDataFromDefaultFiles(his)) {
                     printf("已从默认文件重新加载数据。\n");
                 } else {
-                    printf("重新加载失败：请检查 patients.txt、records.txt、prescriptions.txt、medicines.txt。\n");
+                    printf("重新加载失败：请检查 departments.txt、doctors.txt、wards.txt、patients.txt、records.txt、prescriptions.txt、medicines.txt。\n");
                 }
                 break;
             case 0:

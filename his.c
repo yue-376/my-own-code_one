@@ -1337,10 +1337,10 @@ void seedBaseDepartmentsAndWards(HIS *his, int *departmentIds, int *wardIds) {
 void seedDoctors(HIS *his, const int *departmentIds) {
     const char *titles[] = {"住院医师", "主治医师", "副主任医师", "主任医师"};
     const char *doctorNames[] = {
-        "张建国", "刘志强", "陈晓峰", "黄文杰", "周明远",
-        "吴海涛", "徐振宇", "孙德峰", "马俊涛", "朱宏伟",
-        "林嘉豪", "何立新", "高云飞", "郭志鹏", "罗文斌",
-        "梁博文", "宋嘉诚", "谢安邦", "唐逸凡", "邓浩然"
+        "顾明轩", "程远舟", "陆知衡", "沈嘉言", "韩启川",
+        "许文柏", "魏承安", "严修远", "邵景行", "苏怀瑾",
+        "贺云廷", "袁清和", "崔彦霖", "卢绍庭", "任书珩",
+        "姜叙白", "乔慕川", "康予安", "段星野", "傅谨言"
     };
     int i;
     for (i = 0; i < 20; i++) {

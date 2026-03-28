@@ -1442,6 +1442,9 @@ void buildCourseDataset(HIS *his) {
 
 int loadDataFromDefaultFiles(HIS *his) {
     char line[INPUT_LEN];
+    int maxDepartmentId = 0;
+    int maxDoctorId = 0;
+    int maxWardId = 0;
     int maxPatientId = 0;
     int maxMedicineId = 0;
     int maxRecordId = 0;
@@ -1450,8 +1453,124 @@ int loadDataFromDefaultFiles(HIS *his) {
 
     cleanupHIS(his);
 
+    fp = fopen("departments.txt", "r");
+    if (fp == NULL) {
+        return 0;
+    }
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        int id;
+        char name[NAME_LEN];
+        Department *department;
+        trimNewline(line);
+        if (isBlankString(line) || strcmp(line, "name") == 0 || strcmp(line, "id,name") == 0) {
+            continue;
+        }
+        if (sscanf(line, "%d,%63[^\n]", &id, name) == 2) {
+            department = appendDepartment(his, name);
+            if (department == NULL) {
+                fclose(fp);
+                cleanupHIS(his);
+                return 0;
+            }
+            department->id = id;
+            if (id > maxDepartmentId) {
+                maxDepartmentId = id;
+            }
+        } else {
+            department = appendDepartment(his, line);
+            if (department == NULL) {
+                fclose(fp);
+                cleanupHIS(his);
+                return 0;
+            }
+            if (department->id > maxDepartmentId) {
+                maxDepartmentId = department->id;
+            }
+        }
+    }
+    fclose(fp);
+
+    fp = fopen("doctors.txt", "r");
+    if (fp == NULL) {
+        cleanupHIS(his);
+        return 0;
+    }
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        int id;
+        int departmentId;
+        char name[NAME_LEN];
+        char title[TITLE_LEN];
+        Doctor *doctor;
+        trimNewline(line);
+        if (isBlankString(line) || strcmp(line, "name,departmentId,title") == 0 || strcmp(line, "id,name,departmentId,title") == 0) {
+            continue;
+        }
+        if (sscanf(line, "%d,%63[^,],%d,%31[^\n]", &id, name, &departmentId, title) == 4) {
+            doctor = appendDoctor(his, name, departmentId, title);
+            if (doctor == NULL) {
+                fclose(fp);
+                cleanupHIS(his);
+                return 0;
+            }
+            doctor->id = id;
+            if (id > maxDoctorId) {
+                maxDoctorId = id;
+            }
+        } else if (sscanf(line, "%63[^,],%d,%31[^\n]", name, &departmentId, title) == 3) {
+            doctor = appendDoctor(his, name, departmentId, title);
+            if (doctor == NULL) {
+                fclose(fp);
+                cleanupHIS(his);
+                return 0;
+            }
+            if (doctor->id > maxDoctorId) {
+                maxDoctorId = doctor->id;
+            }
+        }
+    }
+    fclose(fp);
+
+    fp = fopen("wards.txt", "r");
+    if (fp == NULL) {
+        cleanupHIS(his);
+        return 0;
+    }
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        int id;
+        int departmentId;
+        int totalBeds;
+        int usedBeds;
+        char name[NAME_LEN];
+        Ward *ward;
+        trimNewline(line);
+        if (isBlankString(line) || strcmp(line, "id,name,departmentId,totalBeds,usedBeds") == 0) {
+            continue;
+        }
+        if (sscanf(line, "%d,%63[^,],%d,%d,%d", &id, name, &departmentId, &totalBeds, &usedBeds) == 5) {
+            ward = appendWard(his, name, departmentId, totalBeds);
+            if (ward == NULL) {
+                fclose(fp);
+                cleanupHIS(his);
+                return 0;
+            }
+            ward->id = id;
+            if (usedBeds < 0) {
+                ward->usedBeds = 0;
+            } else if (usedBeds > totalBeds) {
+                ward->usedBeds = totalBeds;
+            } else {
+                ward->usedBeds = usedBeds;
+            }
+            if (id > maxWardId) {
+                maxWardId = id;
+            }
+        }
+    }
+    fclose(fp);
+
     fp = fopen("patients.txt", "r");
     if (fp == NULL) {
+        cleanupHIS(his);
         return 0;
     }
     while (fgets(line, sizeof(line), fp) != NULL) {
@@ -1576,6 +1695,9 @@ int loadDataFromDefaultFiles(HIS *his) {
     }
     fclose(fp);
 
+    his->nextDepartmentId = maxDepartmentId + 1;
+    his->nextDoctorId = maxDoctorId + 1;
+    his->nextWardId = maxWardId + 1;
     his->nextPatientId = maxPatientId + 1;
     his->nextMedicineId = maxMedicineId + 1;
     his->nextRecordId = maxRecordId + 1;

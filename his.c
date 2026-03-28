@@ -113,8 +113,9 @@ Medicine *findMedicineById(HIS *his, int id);
 
 void trimNewline(char *text) {
     size_t len = strlen(text);
-    if (len > 0 && text[len - 1] == '\n') {
+    while (len > 0 && (text[len - 1] == '\n' || text[len - 1] == '\r')) {
         text[len - 1] = '\0';
+        len--;
     }
 }
 

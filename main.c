@@ -17,6 +17,11 @@ int main(void) {
     }
 
     printf("系统已启动：未自动生成样例数据，请按需从文件导入。\n");
+    if (loadDataFromDefaultFiles(his)) {
+        printf("系统已初始化：已从 patients.txt、records.txt、prescriptions.txt、medicines.txt 读取数据。\n");
+    } else {
+        printf("系统初始化警告：默认数据文件读取失败，当前为未加载数据状态。\n");
+    }
 
     while (1) {
         showMainMenu();
@@ -45,6 +50,11 @@ int main(void) {
                 break;
             case 8:
                 printf("该版本已禁用样例数据自动生成，请使用各管理菜单中的“从文件导入”功能。\n");
+                if (loadDataFromDefaultFiles(his)) {
+                    printf("已从默认文件重新加载数据。\n");
+                } else {
+                    printf("重新加载失败：请检查 patients.txt、records.txt、prescriptions.txt、medicines.txt。\n");
+                }
                 break;
             case 0:
                 destroyHIS(his);

@@ -23,7 +23,6 @@
  * 1. 全程使用链表组织核心业务数据；
  * 2. 支持患者、医生、科室、病房、药品、医疗记录、处方等实体；
  * 3. 提供新增患者、挂号、住院、开药、查询、统计、导出 txt 数据等功能；
- * 4. 默认生成满足课程设计规模要求的一组样例数据，便于现场演示。
  */
 
 typedef struct Department {
@@ -1313,131 +1312,6 @@ void destroyHIS(HIS *his) {
     }
     cleanupHIS(his);
     free(his);
-}
-
-void seedBaseDepartmentsAndWards(HIS *his, int *departmentIds, int *wardIds) {
-    Department *department;
-    department = appendDepartment(his, "内科");
-    departmentIds[0] = department->id;
-    department = appendDepartment(his, "外科");
-    departmentIds[1] = department->id;
-    department = appendDepartment(his, "儿科");
-    departmentIds[2] = department->id;
-    department = appendDepartment(his, "骨科");
-    departmentIds[3] = department->id;
-    department = appendDepartment(his, "急诊科");
-    departmentIds[4] = department->id;
-
-    wardIds[0] = appendWard(his, "内科一病区", departmentIds[0], 15)->id;
-    wardIds[1] = appendWard(his, "外科一病区", departmentIds[1], 12)->id;
-    wardIds[2] = appendWard(his, "儿科一病区", departmentIds[2], 10)->id;
-    wardIds[3] = appendWard(his, "骨科一病区", departmentIds[3], 10)->id;
-    wardIds[4] = appendWard(his, "急诊留观区", departmentIds[4], 8)->id;
-}
-
-void seedDoctors(HIS *his, const int *departmentIds) {
-    const char *titles[] = {"住院医师", "主治医师", "副主任医师", "主任医师"};
-    const char *doctorNames[] = {
-        "张建国", "刘志强", "陈晓峰", "黄文杰", "周明远",
-        "吴海涛", "徐振宇", "孙德峰", "马俊涛", "朱宏伟",
-        "林嘉豪", "何立新", "高云飞", "郭志鹏", "罗文斌",
-        "梁博文", "宋嘉诚", "谢安邦", "唐逸凡", "邓浩然"
-    };
-    int i;
-    for (i = 0; i < 20; i++) {
-        appendDoctor(his, doctorNames[i], departmentIds[i % 5], titles[i % 4]);
-    }
-}
-
-void seedMedicines(HIS *his) {
-    appendMedicine(his, "阿莫西林胶囊", "阿莫仙", 300, 1.80);
-    appendMedicine(his, "布洛芬缓释胶囊", "芬必得", 260, 2.50);
-    appendMedicine(his, "头孢克肟分散片", "世福素", 200, 4.30);
-    appendMedicine(his, "维生素C片", "VC银翘", 500, 0.60);
-    appendMedicine(his, "葡萄糖注射液", "大输液", 180, 8.00);
-    appendMedicine(his, "氯化钠注射液", "生理盐水", 180, 7.50);
-    appendMedicine(his, "奥美拉唑肠溶胶囊", "洛赛克", 160, 3.20);
-    appendMedicine(his, "蒙脱石散", "思密达", 150, 2.10);
-    appendMedicine(his, "左氧氟沙星片", "可乐必妥", 140, 3.90);
-    appendMedicine(his, "甲硝唑片", "灭滴灵", 220, 1.20);
-    appendMedicine(his, "氨溴索口服液", "沐舒坦", 130, 5.50);
-    appendMedicine(his, "双氯芬酸钠缓释片", "扶他林", 120, 2.80);
-    appendMedicine(his, "维生素B6片", "VB6", 180, 0.70);
-    appendMedicine(his, "乳酸菌素片", "整肠生", 160, 1.60);
-    appendMedicine(his, "小儿氨酚黄那敏颗粒", "护彤", 140, 1.50);
-    appendMedicine(his, "碘伏消毒液", "医用碘伏", 90, 6.80);
-    appendMedicine(his, "云南白药气雾剂", "云南白药", 80, 18.50);
-    appendMedicine(his, "地塞米松片", "信谊", 100, 0.90);
-    appendMedicine(his, "硫酸庆大霉素注射液", "庆大", 90, 2.20);
-    appendMedicine(his, "赖氨匹林散", "赖氨匹林", 110, 1.10);
-    appendMedicine(his, "氯雷他定片", "开瑞坦", 150, 2.60);
-    appendMedicine(his, "复方甘草片", "甘草片", 170, 0.80);
-    appendMedicine(his, "阿奇霉素片", "希舒美", 120, 4.80);
-    appendMedicine(his, "氨咖黄敏胶囊", "速效伤风胶囊", 210, 1.30);
-    appendMedicine(his, "泮托拉唑钠肠溶片", "潘妥洛克", 100, 3.80);
-    appendMedicine(his, "硝苯地平缓释片", "伲福达", 160, 1.90);
-    appendMedicine(his, "盐酸二甲双胍片", "格华止", 180, 1.40);
-    appendMedicine(his, "诺氟沙星胶囊", "氟哌酸", 150, 1.10);
-    appendMedicine(his, "阿司匹林肠溶片", "拜阿司匹灵", 140, 2.20);
-    appendMedicine(his, "复方氨基酸注射液", "氨基酸", 70, 12.50);
-}
-
-void buildCourseDataset(HIS *his) {
-    const char *surnames[] = {
-        "赵", "钱", "孙", "李", "周", "吴", "郑", "王", "冯", "陈",
-        "褚", "卫", "蒋", "沈", "韩", "杨", "朱", "秦", "尤", "许"
-    };
-    const char *givenNames[] = {
-        "雷", "敏", "华", "静", "强", "芳", "娜", "军", "洋", "婷",
-        "磊", "洁", "晨", "雪", "凯", "欣", "博", "莹", "辉", "倩"
-    };
-    const char *complaints[] = {
-        "发热咳嗽三天", "腹痛待查", "关节疼痛", "儿童发烧", "外伤复诊",
-        "胃部不适", "头晕乏力", "咽痛", "腰背疼痛", "皮肤过敏"
-    };
-    const char *diagnoses[] = {
-        "肺部感染，建议住院观察", "急性阑尾炎，术前准备", "骨折复位后住院治疗", "高热脱水，补液治疗", "外伤缝合后观察"
-    };
-    int departmentIds[5];
-    int wardIds[5];
-    int i;
-
-    cleanupHIS(his);
-    seedBaseDepartmentsAndWards(his, departmentIds, wardIds);
-    seedDoctors(his, departmentIds);
-    seedMedicines(his);
-
-    for (i = 0; i < 135; i++) {
-        char patientName[NAME_LEN];
-        char phone[ID_LEN];
-        char note[NOTE_LEN];
-        char gender[16];
-        int age = 18 + (i % 63);
-        int doctorId;
-        int medicineId;
-        Patient *patient;
-
-        snprintf(patientName,
-                 sizeof(patientName),
-                 "%s%s%d",
-                 surnames[i % 20],
-                 givenNames[(i * 3) % 20],
-                 (i % 7) + 1);
-        snprintf(phone, sizeof(phone), "139%08d", i + 1);
-        strcpy(gender, (i % 2 == 0) ? "男" : "女");
-        patient = appendPatient(his, patientName, age, gender, phone);
-        doctorId = (i % 20) + 1;
-        snprintf(note, sizeof(note), "%s（门诊编号:%03d）", complaints[i % 10], i + 1);
-        registerPatient(his, patient->id, doctorId, note);
-
-        if (i < 35) {
-            admitPatient(his, patient->id, wardIds[i % 5], diagnoses[i % 5]);
-        }
-        if (i < 90) {
-            medicineId = (i % 30) + 1;
-            prescribeMedicine(his, patient->id, doctorId, medicineId, (i % 3) + 1);
-        }
-    }
 }
 
 int loadDataFromDefaultFiles(HIS *his) {
